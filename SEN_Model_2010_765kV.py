@@ -37,31 +37,57 @@ print(net.line) # show line table
 ### Shunt ###
 shunts = pd.read_csv('data/Shunt.csv',names=['bus_num','power_rating','voltage_rating','freq_rating',
                                              'conductance','susceptance'],index_col=False)
-#pp.create_shunt(net, pp.get_element_index(net, "bus", 'Bus HV1'), p_mw=0, q_mvar=0.960, name='Shunt')
+for shunt in shunts.itertuples(index=True, name='Pandas'):
+    bus_num = getattr(shunt, "bus_num")
+    q_mvar = getattr(shunt, "susceptance")
+    shunt_num = getattr(shunt, "Index")
+    pp.create_shunt(net, bus_num-1, p_mw=0, q_mvar=q_mvar, name='Shunt %s' % shunt_num)
+print(net.shunt) # show shunt table
 
 ### Swing ###
-swing = pd.read_csv('data/SW.csv',names=['bus_num','power_rating','voltage_rating','voltage_mag','ref_angle',
+swings = pd.read_csv('data/SW.csv',names=['bus_num','power_rating','voltage_rating','voltage_mag','ref_angle',
                                          'q_max','q_min','v_max','v_min','p_init','loss_coeff','area','region'],index_col=False)
-#pp.create_ext_grid(net, pp.get_element_index(net, "bus", 'Double Busbar 1'), vm_pu=1.03, va_degree=0, name='External grid',
-#                   s_sc_max_mva=10000, rx_max=0.1, rx_min=0.1)
+for swing in swings.itertuples(index=True, name='Pandas'):
+    bus_num = getattr(swing, "bus_num")
+    vm_pu = getattr(swing, "voltage_mag")
+    va_degree = getattr(swing, "ref_angle")
+    pp.create_ext_grid(net, bus_num-1, vm_pu=vm_pu, va_degree=va_degree, name='Slack Bus')
+print(net.ext_grid) # show swing table
 
 ### PV ###
-pv = pd.read_csv('data/PV.csv',names=['bus_num','power_rating','voltage_rating','active_power','voltage_mag',
+pvs = pd.read_csv('data/PV.csv',names=['bus_num','power_rating','voltage_rating','active_power','voltage_mag',
                                          'q_max','q_min','v_max','v_min','p_init','loss_coeff'],index_col=False)
-#pp.create_gen(net, pp.get_element_index(net, "bus", 'Bus HV4'), vm_pu=1.03, p_mw=100, name='Gas turbine')
+for pv in pvs.itertuples(index=True, name='Pandas'):
+    bus_num = getattr(pv, "bus_num")
+    vm_pu = getattr(pv, "voltage_mag")
+    p_mw = getattr(pv, "active_power")
+    pv_num = getattr(pv, "Index")
+    pp.create_gen(net, bus_num-1, vm_pu=vm_pu, p_mw=p_mw, name='Gen %s' % pv_num)
+print(net.gen) # show gen table
 
 ### PQ ###
-pq = pd.read_csv('data/PQ.csv',names=['bus_num','power_rating','voltage_rating','active_power','reactive_power',
+pqs = pd.read_csv('data/PQ.csv',names=['bus_num','power_rating','voltage_rating','active_power','reactive_power',
                                      'v_max','v_min','conv_imp','area'],index_col=False)
-#pp.create_load(net, bus_idx, p_mw=load.p, q_mvar=load.q, name=load.load_name)
+for pq in pqs.itertuples(index=True, name='Pandas'):
+    bus_num = getattr(pq, "bus_num")
+    p_mw = getattr(pq, "active_power")
+    q_mvar = getattr(pq, "active_power")
+    pq_num = getattr(pq, "Index")
+    pp.create_load(net, bus_num-1, p_mw=p_mw, q_mvar=q_mvar, name='Load %s' % pq_num)
+print(net.load) # show loads table
 
 ### PQgen ###
-pqgen = pd.read_csv('data/PQgen.csv',names=['bus_num','power_rating','voltage_rating','active_power','reactive_power',
+pqgens = pd.read_csv('data/PQgen.csv',names=['bus_num','power_rating','voltage_rating','active_power','reactive_power',
                                             'v_max','v_min','conv_imp','area'],index_col=False)
-#pp.create_sgen(net, pp.get_element_index(net, "bus", 'Bus SB 5'), p_mw=20, q_mvar=4, sn_mva=45, 
-#               type='WP', name='Wind Park')
-
+for pqgen in pqgens.itertuples(index=True, name='Pandas'):
+    bus_num = getattr(pqgen, "bus_num")
+    p_mw = getattr(pqgen, "active_power")
+    q_mvar = getattr(pqgen, "active_power")
+    sn_mva = getattr(pqgen, "power_rating")
+    pqgen_num = getattr(pqgen, "Index")
+    pp.create_sgen(net, bus_num-1, p_mw=p_mw, q_mvar=q_mvar, sn_mva=sn_mva, name='StatGen %s' % pqgen_num)
+print(net.sgen) # show static gen table
 
 ### Run Power Flow ###
-#pp.runpp(net, calculate_voltage_angles=True, init="dc")
-#print(net)
+pp.runpp(net, calculate_voltage_angles=True, init="dc")
+print(net)
