@@ -32,6 +32,8 @@ for line in lines.itertuples(index=True, name='Pandas'):
     pp.create_line_from_parameters(net,from_bus-1,to_bus-1, 
                                    length_km=length,r_ohm_per_km=r_ohm_per_km,x_ohm_per_km=x_ohm_per_km,
                                    c_nf_per_km=c_nf_per_km,max_i_ka=max_i_ka,name='Line %s' % line_num)
+    '''pp.create_line(net,from_bus-1,to_bus-1,length_km=length,std_type="NAYY 4x50 SE",
+                                   name='Line %s' % line_num)'''
 print(net.line) # show line table
     
 ### Shunt ###
@@ -71,7 +73,7 @@ pqs = pd.read_csv('data/PQ.csv',names=['bus_num','power_rating','voltage_rating'
 for pq in pqs.itertuples(index=True, name='Pandas'):
     bus_num = getattr(pq, "bus_num")
     p_mw = getattr(pq, "active_power")
-    q_mvar = getattr(pq, "active_power")
+    q_mvar = getattr(pq, "reactive_power")
     pq_num = getattr(pq, "Index")
     pp.create_load(net, bus_num-1, p_mw=p_mw, q_mvar=q_mvar, name='Load %s' % pq_num)
 print(net.load) # show loads table
@@ -81,13 +83,21 @@ pqgens = pd.read_csv('data/PQgen.csv',names=['bus_num','power_rating','voltage_r
                                             'v_max','v_min','conv_imp','area'],index_col=False)
 for pqgen in pqgens.itertuples(index=True, name='Pandas'):
     bus_num = getattr(pqgen, "bus_num")
-    p_mw = getattr(pqgen, "active_power")
-    q_mvar = getattr(pqgen, "active_power")
-    sn_mva = getattr(pqgen, "power_rating")
-    pqgen_num = getattr(pqgen, "Index")
-    pp.create_sgen(net, bus_num-1, p_mw=p_mw, q_mvar=q_mvar, sn_mva=sn_mva, name='StatGen %s' % pqgen_num)
+    try:
+        mask=pqs[pqs['bus_num']==bus_num].index.tolist()[0]
+        raise ValueError("Attention static gens and loads at the same bus. Manually modify database")
+    except:
+        p_mw = getattr(pqgen, "active_power")
+        q_mvar = getattr(pqgen, "reactive_power")
+        sn_mva = getattr(pqgen, "power_rating")
+        pqgen_num = getattr(pqgen, "Index")
+        pp.create_sgen(net, bus_num-1, p_mw=p_mw, q_mvar=q_mvar, sn_mva=sn_mva, name='StatGen %s' % pqgen_num)
+        #pp.create_load(net, bus_num-1, p_mw=p_mw, q_mvar=q_mvar, name='StatGen %s' % pqgen_num)
 print(net.sgen) # show static gen table
 
+### Diagnosis ###
+pp.diagnostic(net, report_style='detailed', warnings_only=False, return_result_dict=True, overload_scaling_factor=0.001, min_r_ohm=0.001, min_x_ohm=0.001, min_r_pu=1e-05, min_x_pu=1e-05, nom_voltage_tolerance=0.3, numba_tolerance=1e-05)
+
 ### Run Power Flow ###
-pp.runpp(net, calculate_voltage_angles=True, init="dc")
+pp.runpp(net, algorithm="iwamoto_nr", calculate_voltage_angles="auto", init="dc", check_connectivity=True, v_debug=True) #, init_vm_pu=True, init_va_degree=True
 print(net)
